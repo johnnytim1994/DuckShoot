@@ -1,0 +1,14 @@
+{
+  "ver": "2.0.3",
+  "importer": "prefab",
+  "imported": true,
+  "uuid": "933a8588-85ef-4c76-a675-44deed4b8294",
+  "files": [
+    ".json"
+  ],
+  "subMetas": {},
+  "userData": {
+    "syncNodeName": "Bullet",
+    "hasIcon": false
+  }
+}
