@@ -1,4 +1,6 @@
 import { _decorator, Component, Node, Vec3, UITransform, Sprite, SpriteFrame, Texture2D, Color, CCFloat } from 'cc';
+import { FreezeEffect } from './freezeEffect';
+import { EnemyController } from './enemyController';
 const { ccclass, property } = _decorator;
 
 @ccclass('BulletController')
@@ -17,12 +19,13 @@ export class BulletController extends Component {
     private canvasHalfW: number = 0;
     private canvasHalfH: number = 0;
     private isDead: boolean = false;
+    private freezeLevel: number = 0;
+    private freezeChance: number = 0;
 
     onLoad() {
         this.ensureWhiteSprite();
     }
 
-    /** 创建程序化白色纹理 */
     private ensureWhiteSprite() {
         const sprite = this.node.getComponent(Sprite);
         if (!sprite) return;
@@ -58,7 +61,6 @@ export class BulletController extends Component {
         }
     }
 
-    /** 初始化子弹：设置飞行方向和画布边界 */
     init(direction: Vec3, speed: number, damage: number, size: number, canvasNode: Node) {
         this.direction = direction.clone();
         this.direction.z = 0;
@@ -82,12 +84,18 @@ export class BulletController extends Component {
         }
     }
 
-    /** 获取伤害值 */
+    setFreezeData(level: number, chance: number) {
+        this.freezeLevel = level;
+        this.freezeChance = chance;
+        if (level > 0 && this.node.getComponent(Sprite)) {
+            this.node.getComponent(Sprite)!.color = new Color(150, 200, 255, 255);
+        }
+    }
+
     getDamage(): number {
         return this.damage;
     }
 
-    /** 是否已死亡 */
     getIsDead(): boolean {
         return this.isDead;
     }
@@ -95,12 +103,10 @@ export class BulletController extends Component {
     update(dt: number) {
         if (this.isDead) return;
 
-        // 移动
         const newPos = new Vec3();
         Vec3.scaleAndAdd(newPos, this.node.position, this.direction, this.bulletSpeed * dt);
         this.node.setPosition(newPos);
 
-        // 边界检测：超出屏幕则销毁
         if (
             Math.abs(newPos.x) > this.canvasHalfW ||
             Math.abs(newPos.y) > this.canvasHalfH
@@ -109,8 +115,17 @@ export class BulletController extends Component {
         }
     }
 
-    /** 命中敌人后销毁 */
-    hitTarget() {
+    hitTarget(enemyNode?: Node) {
+        if (this.freezeLevel > 0 && enemyNode && Math.random() < this.freezeChance) {
+            const existingFreeze = enemyNode.getComponent(FreezeEffect);
+            if (!existingFreeze) {
+                const enemyCtrl = enemyNode.getComponent(EnemyController);
+                if (enemyCtrl) {
+                    const freeze = enemyNode.addComponent(FreezeEffect);
+                    freeze.init(enemyCtrl.moveSpeed, enemyCtrl);
+                }
+            }
+        }
         this.destroyBullet();
     }
 

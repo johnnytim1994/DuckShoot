@@ -1,3 +1,7 @@
+/**
+ * 鸭子控制器：鼠标/触屏跟随移动，边界限制
+ * 由 gameConfig 数据驱动，支持动态调整大小
+ */
 import {
     _decorator, Component, Node, input, Input, EventTouch, EventMouse,
     Vec3, UITransform, view, CCFloat, CCBoolean,

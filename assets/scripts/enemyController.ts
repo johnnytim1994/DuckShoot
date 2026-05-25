@@ -1,3 +1,8 @@
+/**
+ * 敌人控制器：4 种敌人类型（Chaser/Shield/Regen/Swarm）
+ * 追踪鸭子移动，支持类型差异化属性（速度/血量/大小/回血）
+ * 数据驱动，数值由 EnemySpawner 传入
+ */
 import { _decorator, Component, Node, Vec3, UITransform, Sprite, SpriteFrame, Texture2D, Color, CCFloat } from 'cc';
 import { EnemyType, ENEMY_TYPE_MODIFIERS } from '../config/gameConfig';
 const { ccclass, property } = _decorator;
@@ -22,6 +27,7 @@ export class EnemyController extends Component {
     private targetNode: Node | null = null;
     private isDead: boolean = false;
     private enemyType: EnemyType = EnemyType.Chaser;
+    isFrozen: boolean = false;
 
     onLoad() {
         this.ensureRedSprite();
@@ -153,6 +159,16 @@ export class EnemyController extends Component {
 
     update(dt: number) {
         if (this.isDead || !this.targetNode || !this.targetNode.isValid) return;
+
+        if (this.isFrozen) return;
+
+        // Regen 类型：持续回血
+        if (this.enemyType === EnemyType.Regen && this.hp < this.maxHp) {
+            const regenPerSec = ENEMY_TYPE_MODIFIERS[EnemyType.Regen].regenPerSec;
+            if (regenPerSec) {
+                this.hp = Math.min(this.maxHp, this.hp + regenPerSec * dt);
+            }
+        }
 
         const targetPos = this.targetNode.position;
         const myPos = this.node.position;

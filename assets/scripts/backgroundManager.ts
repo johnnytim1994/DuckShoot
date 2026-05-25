@@ -1,3 +1,6 @@
+/**
+ * 背景管理器：随机/固定颜色背景，自动拉伸填满 Canvas
+ */
 import {
     _decorator, Component, Sprite, Color, CCFloat, CCBoolean,
     SpriteFrame, Texture2D, UITransform

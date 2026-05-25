@@ -1,7 +1,13 @@
+/**
+ * 敌人生成器：波次系统，从屏幕四边随机生成敌人
+ * 每波递增难度（速度/血量/大小），随机分配 4 种敌人类型
+ * 同时负责鸭子-敌人碰撞检测
+ */
 import { _decorator, Component, Node, Vec3, instantiate, Prefab, UITransform, view, CCFloat, CCInteger } from 'cc';
 import { EnemyController } from './enemyController';
 import { DuckController } from './duckController';
-import { ENEMY_CONFIG, EnemyType, ENEMY_TYPE_MODIFIERS } from '../config/gameConfig';
+import { DuckHP } from './duckHP';
+import { ENEMY_CONFIG, EnemyType, ENEMY_TYPE_MODIFIERS, ENEMY_XP } from '../config/gameConfig';
 const { ccclass, property } = _decorator;
 
 interface EnemyConfig {
@@ -52,6 +58,7 @@ export class EnemySpawner extends Component {
     private enemyPrefab: Prefab | null = null;
     private duckNode: Node | null = null;
     private canvasNode: Node | null = null;
+    private duckHP: DuckHP | null = null;
     private spawnTimer: number = 0;
     private waveTimer: number = 0;
     private currentWave: number = 0;
@@ -59,6 +66,10 @@ export class EnemySpawner extends Component {
 
     onLoad() {
         this.canvasNode = this.node.parent;
+    }
+
+    setDuckHP(hp: DuckHP) {
+        this.duckHP = hp;
     }
 
     /** 初始化：设置预制体和鸭子引用，开始生成 */
@@ -108,9 +119,10 @@ export class EnemySpawner extends Component {
         // 添加到 Canvas
         this.canvasNode.addChild(enemyNode);
 
-        // 监听死亡事件
+        // 监听死亡事件：获得经验
         enemyNode.on('enemy-died', (enemy: EnemyController) => {
-            // 可在此添加音效、特效等
+            const xp = ENEMY_XP[enemy.getEnemyType()] || 1;
+            this.canvasNode!.emit('enemy-killed', xp);
         });
     }
 
@@ -180,13 +192,12 @@ export class EnemySpawner extends Component {
         this.checkCollisions();
     }
 
-    /** 简单圆形碰撞检测 */
+    /** 简单圆形碰撞检测 — 鸭子掉血，敌人不消失 */
     private checkCollisions() {
-        if (!this.duckNode || !this.duckNode.isValid || !this.canvasNode) return;
+        if (!this.duckNode || !this.duckNode.isValid || !this.canvasNode || !this.duckHP) return;
 
         const duckCtrl = this.duckNode.getComponent(DuckController);
         if (!duckCtrl) return;
-
         const duckPos = this.duckNode.position;
         const duckSize = duckCtrl.duckSize;
 
@@ -200,13 +211,11 @@ export class EnemySpawner extends Component {
             const dy = enemyPos.y - duckPos.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            // 碰撞半径：(duckSize + enemySize) / 2 * 0.6 留点容错
-            const collisionRadius = (duckSize + enemyCtrl.enemySize) * 0.3;
+            const collisionRadius = (duckSize + enemyCtrl.enemySize) * 0.5;
 
             if (dist < collisionRadius) {
-                // 碰撞！敌人自毁
-                console.log('[EnemySpawner] 敌人撞到鸭子!');
-                enemyCtrl.takeDamage(999); // 秒杀敌人
+                console.log('[EnemySpawner] 敌人碰到鸭子!');
+                this.duckHP.takeDamage(enemyCtrl.damage);
             }
         }
     }

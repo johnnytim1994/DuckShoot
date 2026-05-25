@@ -1,3 +1,8 @@
+/**
+ * 游戏配置：接口定义、枚举、默认值、JSON 加载器
+ * 所有游戏数值统一在此管理，禁止硬编码
+ * 优先从 resources/config/gameConfig.json 加载，失败则使用默认值
+ */
 import { resources } from 'cc';
 
 // ─── 枚举 ────────────────────────────────────────────
@@ -36,6 +41,33 @@ export interface DuckConfig {
     size: number;
 }
 
+/** 鸭子血量配置 */
+export interface DuckHPConfig {
+    maxHp: number;
+    invincibleTime: number;
+}
+
+/** 经验配置 */
+export interface XPConfig {
+    baseXpToLevel: number;
+    xpScalePerLevel: number;
+}
+
+/** HUD 配置（血条/经验条） */
+export interface HUDConfig {
+    hpBarWidthRatio: number;
+    hpBarHeight: number;
+    hpBarOffsetY: number;
+    xpBarWidthRatio: number;
+    xpBarHeight: number;
+    xpBarY: number;
+}
+
+/** 冰冻配置 */
+export interface FreezeConfig {
+    duration: number;
+}
+
 /** 敌人配置 */
 export interface EnemyConfig {
     baseSpeed: number;
@@ -65,6 +97,65 @@ export interface GameConfig {
     duck: DuckConfig;
     enemy: EnemyConfig;
     attack: AttackConfig;
+    hud: HUDConfig;
+}
+
+/** 鸭子血量默认配置 */
+export const DUCK_HP_CONFIG: DuckHPConfig = {
+    maxHp: 10,
+    invincibleTime: 0.5,
+};
+
+/** 经验默认配置 */
+export const XP_CONFIG: XPConfig = {
+    baseXpToLevel: 10,
+    xpScalePerLevel: 1.5,
+};
+
+/** HUD 默认配置 */
+export const HUD_CONFIG: HUDConfig = {
+    hpBarWidthRatio: 1.2,
+    hpBarHeight: 8,
+    hpBarOffsetY: 20,
+    xpBarWidthRatio: 0.8,
+    xpBarHeight: 24,
+    xpBarY: -20,
+};
+
+/** 敌人经验值 */
+export const ENEMY_XP: Record<EnemyType, number> = {
+    [EnemyType.Chaser]: 1,
+    [EnemyType.Shield]: 2,
+    [EnemyType.Regen]: 1,
+    [EnemyType.Swarm]: 1,
+};
+
+/** 技能配置 */
+export const SKILL_CONFIG = {
+    maxLevels: {
+        damage_up: 5,
+        multi_shot: 3,
+        freeze: 3,
+        fire_rate: 5,
+        speed_boost: 3,
+        hp_boost: 3,
+    } as Record<string, number>,
+    skillOptionsPerLevel: 3,
+};
+
+/** 冰冻效果配置 */
+export const FREEZE_CONFIG: FreezeConfig = {
+    duration: 2.0,
+};
+
+/** 根据冰冻等级计算冰冻概率 */
+export function getFreezeChance(freezeLevel: number): number {
+    return freezeLevel * 0.15;
+}
+
+/** 根据散射等级计算弹道数 */
+export function getMultiShotCount(level: number): number {
+    return 1 + level * 2;
 }
 
 /** 默认游戏配置 */
@@ -94,6 +185,14 @@ const DEFAULT_CONFIG: GameConfig = {
         bulletDamage: 1,
         attackRange: 500,
         attackMode: AttackMode.NEAREST_ENEMY,
+    },
+    hud: {
+        hpBarWidthRatio: 1.2,
+        hpBarHeight: 8,
+        hpBarOffsetY: 20,
+        xpBarWidthRatio: 0.8,
+        xpBarHeight: 24,
+        xpBarY: -20,
     },
 };
 

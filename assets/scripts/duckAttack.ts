@@ -1,7 +1,8 @@
-import { _decorator, Component, Node, Vec3, instantiate, Prefab, CCFloat } from 'cc';
+import { _decorator, Component, Node, Vec3, instantiate, Prefab, CCFloat, CCInteger } from 'cc';
 import { EnemyController } from './enemyController';
 import { BulletController } from './bulletController';
-import { BULLET_CONFIG, AttackMode } from '../config/gameConfig';
+import { FreezeEffect } from './freezeEffect';
+import { BULLET_CONFIG, AttackMode, getMultiShotCount, getFreezeChance } from '../config/gameConfig';
 const { ccclass, property } = _decorator;
 
 interface AttackConfig {
@@ -32,15 +33,21 @@ export class DuckAttack extends Component {
     private bulletPrefab: Prefab | null = null;
     private canvasNode: Node | null = null;
     private fireTimer: number = 0;
+    private multiShotLevel: number = 0;
+    private freezeLevel: number = 0;
 
     onLoad() {
         this.canvasNode = this.node.parent;
     }
 
-    /** 初始化：设置子弹预制体 */
+    setMultiShotLevel(level: number) { this.multiShotLevel = level; }
+    setFreezeLevel(level: number) { this.freezeLevel = level; }
+    setFireRateScale(scale: number) { this.fireRate = BULLET_CONFIG.fireRate * scale; }
+    setDamageBonus(bonus: number) { this.bulletDamage = BULLET_CONFIG.bulletDamage + bonus; }
+
     startAttack(bulletPrefab: Prefab) {
         this.bulletPrefab = bulletPrefab;
-        this.fireTimer = 1.0 / this.fireRate; // 立即开始射击
+        this.fireTimer = 1.0 / this.fireRate;
     }
 
     update(dt: number) {
@@ -55,8 +62,30 @@ export class DuckAttack extends Component {
         }
     }
 
-    /** 尝试向最近的敌人射击 */
     private tryFire() {
+        const duckPos = this.node.position;
+        const dir = this.calculateFireDirection(duckPos);
+        if (!dir || dir.length() < 0.1) return;
+
+        const shotCount = getMultiShotCount(this.multiShotLevel);
+        const spreadAngle = 20;
+        const startAngle = (shotCount - 1) * spreadAngle * -0.5;
+
+        for (let i = 0; i < shotCount; i++) {
+            const angle = startAngle + i * spreadAngle;
+            const bulletDir = this.rotateDir(dir, angle);
+            this.fireBullet(duckPos, bulletDir);
+        }
+    }
+
+    private rotateDir(dir: Vec3, angleDeg: number): Vec3 {
+        const rad = angleDeg * Math.PI / 180;
+        const cos = Math.cos(rad);
+        const sin = Math.sin(rad);
+        return new Vec3(dir.x * cos - dir.y * sin, dir.x * sin + dir.y * cos, 0);
+    }
+
+    private fireBullet(duckPos: Vec3, dir: Vec3) {
         const bulletNode = instantiate(this.bulletPrefab!);
         const bulletCtrl = bulletNode.getComponent(BulletController);
         if (!bulletCtrl) {
@@ -64,45 +93,25 @@ export class DuckAttack extends Component {
             return;
         }
 
-        const duckPos = this.node.position;
-
-        // 根据攻击模式计算方向
-        const dir = this.calculateFireDirection(duckPos);
-        if (!dir || dir.length() < 0.1) return;
-
-        // 设置子弹位置在鸭子位置
         bulletNode.setPosition(duckPos.clone());
-
-        // 添加到 Canvas
         this.canvasNode!.addChild(bulletNode);
-
-        // 初始化子弹
         bulletCtrl.init(dir, this.bulletSpeed, this.bulletDamage, this.bulletSize, this.canvasNode!);
+
+        if (this.freezeLevel > 0) {
+            bulletCtrl.setFreezeData(this.freezeLevel, getFreezeChance(this.freezeLevel));
+        }
     }
 
-    /** 根据攻击模式计算发射方向 */
     private calculateFireDirection(duckPos: Vec3): Vec3 | null {
-        if (BULLET_CONFIG.attackMode === AttackMode.NEAREST_ENEMY) {
-            const target = this.findNearestEnemy();
-            if (!target) return null;
-            const targetPos = target.position;
-            const dir = new Vec3();
-            Vec3.subtract(dir, targetPos, duckPos);
-            dir.z = 0;
-            return dir;
-        }
-
-        // MOUSE_DIRECTION：向鼠标方向射击（取鼠标方向最近敌人，无敌人则用纯方向）
         const target = this.findNearestEnemy();
         if (!target) return null;
-        const targetPos = target.position.clone();
+        const targetPos = target.position;
         const dir = new Vec3();
         Vec3.subtract(dir, targetPos, duckPos);
         dir.z = 0;
         return dir;
     }
 
-    /** 查找攻击范围内的最近敌人 */
     private findNearestEnemy(): Node | null {
         if (!this.canvasNode) return null;
 
@@ -115,7 +124,6 @@ export class DuckAttack extends Component {
             const enemyCtrl = child.getComponent(EnemyController);
             if (!enemyCtrl || enemyCtrl.getIsDead()) continue;
 
-            // 跳过鸭子自身和子弹
             if (child === this.node) continue;
             if (child.getComponent(BulletController)) continue;
 
