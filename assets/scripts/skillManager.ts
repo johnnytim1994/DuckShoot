@@ -1,3 +1,7 @@
+/**
+ * 技能管理器：管理技能池、等级、升级选项抽取
+ * 升级时随机抽取可用技能，SkillUI 负责展示和交互
+ */
 import { _decorator, Component } from 'cc';
 import { SKILL_CONFIG } from '../config/gameConfig';
 const { ccclass } = _decorator;
@@ -7,6 +11,14 @@ export interface SkillDef {
     name: string;
     desc: string;
     maxLevel: number;
+}
+
+export interface SkillOption {
+    id: string;
+    name: string;
+    desc: string;
+    maxLevel: number;
+    currentLevel: number;
 }
 
 const SKILL_POOL: SkillDef[] = [
@@ -40,10 +52,16 @@ export class SkillManager extends Component {
         return [...SKILL_POOL];
     }
 
-    getUpgradeOptions(count: number = SKILL_CONFIG.skillOptionsPerLevel): SkillDef[] {
+    getUpgradeOptions(count: number = SKILL_CONFIG.skillOptionsPerLevel): SkillOption[] {
         const available = SKILL_POOL.filter(s => (this.skillLevels[s.id] || 0) < s.maxLevel);
         const shuffled = [...available].sort(() => Math.random() - 0.5);
-        return shuffled.slice(0, count);
+        return shuffled.slice(0, count).map(s => ({
+            id: s.id,
+            name: s.name,
+            desc: s.desc,
+            maxLevel: s.maxLevel,
+            currentLevel: this.skillLevels[s.id] || 0,
+        }));
     }
 
     applySkill(id: string): number {

@@ -61,6 +61,11 @@ export interface HUDConfig {
     xpBarWidthRatio: number;
     xpBarHeight: number;
     xpBarY: number;
+    hudWidth: number;
+    hudHeight: number;
+    hudPadding: number;
+    hudFontSize: number;
+    hudGap: number;
 }
 
 /** 冰冻配置 */
@@ -120,6 +125,11 @@ export const HUD_CONFIG: HUDConfig = {
     xpBarWidthRatio: 0.8,
     xpBarHeight: 24,
     xpBarY: -20,
+    hudWidth: 180,
+    hudHeight: 16,
+    hudPadding: 10,
+    hudFontSize: 13,
+    hudGap: 4,
 };
 
 /** 敌人经验值 */
@@ -193,6 +203,11 @@ const DEFAULT_CONFIG: GameConfig = {
         xpBarWidthRatio: 0.8,
         xpBarHeight: 24,
         xpBarY: -20,
+        hudWidth: 180,
+        hudHeight: 16,
+        hudPadding: 10,
+        hudFontSize: 13,
+        hudGap: 4,
     },
 };
 

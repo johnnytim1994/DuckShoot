@@ -1,3 +1,7 @@
+/**
+ * 经验管理器：管理经验值累加和升级事件
+ * 经验满时触发 level-up 事件，由 GameRoot 接管升级流程
+ */
 import { _decorator, Component, CCInteger, CCFloat } from 'cc';
 import { XP_CONFIG } from '../config/gameConfig';
 const { ccclass, property } = _decorator;

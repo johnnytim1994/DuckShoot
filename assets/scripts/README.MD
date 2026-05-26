@@ -13,9 +13,9 @@
 | `enemyController.ts` | 4 种敌人类型（Chaser/Shield/Regen/Swarm），支持冻结状态 |
 | `enemySpawner.ts` | 波次生成系统，屏幕边缘随机生成，难度递增，碰撞触发鸭子掉血 |
 | `xpManager.ts` | 经验值管理，升级事件触发 |
-| `skillManager.ts` | 技能池管理，升级时随机抽取技能选项 |
-| `skillUI.ts` | 升级选技能 UI 面板（程序化纹理零资源依赖） |
-| `duckHUD.ts` | 血条（跟随鸭子） + 经验条（屏幕底部）HUD 显示 |
+| `skillManager.ts` | 技能池管理，升级时随机抽取技能选项，提供 SkillOption 含当前等级 |
+| `skillUI.ts` | 升级选技能 UI 面板，程序化纹理，支持悬停高亮 + 点击选中 |
+| `duckHUD.ts` | 血条 + 经验条（屏幕左上角固定位置）HUD 显示 |
 | `backgroundManager.ts` | 背景色管理，随机/固定颜色 |
 
 ## 数据流

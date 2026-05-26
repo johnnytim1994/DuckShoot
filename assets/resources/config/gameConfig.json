@@ -30,7 +30,12 @@
     "hpBarOffsetY": 20,
     "xpBarWidthRatio": 0.8,
     "xpBarHeight": 24,
-    "xpBarY": -20
+    "xpBarY": -20,
+    "hudWidth": 180,
+    "hudHeight": 16,
+    "hudPadding": 10,
+    "hudFontSize": 13,
+    "hudGap": 4
   },
   "room": {
     "width": 1280,

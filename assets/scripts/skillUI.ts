@@ -1,22 +1,32 @@
+/**
+ * 升级选技能 UI 面板：程序化纹理，动态创建技能卡片，
+ * 卡片支持悬停高亮 + 点击选中，显示当前等级/最大等级
+ */
 import { _decorator, Component, Node, Label, Color, Sprite, SpriteFrame, Texture2D, UITransform, Vec3 } from 'cc';
-import { SkillDef } from './skillManager';
+import { SkillOption } from './skillManager';
 const { ccclass } = _decorator;
 
 interface SkillCard {
     bg: Node;
+    bgSprite: Sprite | null;
     nameLabel: Label;
     descLabel: Label;
     skillId: string;
+    defaultColor: Color;
+    hoverColor: Color;
 }
+
+const CARD_DEFAULT = new Color(60, 60, 80, 255);
+const CARD_HOVER = new Color(90, 90, 120, 255);
+const CARD_PRESSED = new Color(50, 50, 65, 255);
 
 @ccclass('SkillUI')
 export class SkillUI extends Component {
     private panel: Node | null = null;
-    private titleLabel: Label | null = null;
     private cards: SkillCard[] = [];
     private onSkillSelected: ((skillId: string) => void) | null = null;
 
-    show(options: SkillDef[], callback: (skillId: string) => void) {
+    show(options: SkillOption[], callback: (skillId: string) => void) {
         this.onSkillSelected = callback;
         this.createPanel(options);
     }
@@ -29,10 +39,10 @@ export class SkillUI extends Component {
         this.cards = [];
     }
 
-    private createPanel(options: SkillDef[]) {
+    private createPanel(options: SkillOption[]) {
         this.panel = new Node('SkillPanel');
         const panelTransform = this.panel.addComponent(UITransform);
-        panelTransform.setContentSize(400, 350);
+        panelTransform.setContentSize(420, 380);
 
         const sprite = this.panel.addComponent(Sprite);
         const tex = new Texture2D();
@@ -50,17 +60,25 @@ export class SkillUI extends Component {
         const titleTransform = titleNode.addComponent(UITransform);
         titleTransform.setContentSize(300, 40);
         const titleLabel = titleNode.addComponent(Label);
-        titleLabel.string = '选择升级技能';
-        titleLabel.fontSize = 28;
+        titleLabel.string = '升级 - 选择一项技能';
+        titleLabel.fontSize = 24;
         titleLabel.color = new Color(255, 255, 200, 255);
         this.panel.addChild(titleNode);
-        titleNode.setPosition(new Vec3(0, 130, 0));
-        this.titleLabel = titleLabel;
+        titleNode.setPosition(new Vec3(0, 150, 0));
 
-        const cardWidth = 340;
-        const cardHeight = 70;
-        const startY = 60;
-        const gap = 10;
+        const hintNode = new Node('Hint');
+        hintNode.addComponent(UITransform).setContentSize(300, 24);
+        const hintLabel = hintNode.addComponent(Label);
+        hintLabel.string = '点击选择升级';
+        hintLabel.fontSize = 14;
+        hintLabel.color = new Color(180, 180, 200, 255);
+        this.panel.addChild(hintNode);
+        hintNode.setPosition(new Vec3(0, 125, 0));
+
+        const cardWidth = 360;
+        const cardHeight = 76;
+        const startY = 75;
+        const gap = 12;
 
         this.cards = [];
         for (let i = 0; i < options.length; i++) {
@@ -70,10 +88,9 @@ export class SkillUI extends Component {
         }
     }
 
-    private createCard(skill: SkillDef, w: number, h: number, pos: Vec3): SkillCard {
+    private createCard(skill: SkillOption, w: number, h: number, pos: Vec3): SkillCard {
         const card = new Node('SkillCard_' + skill.id);
-        const cardTransform = card.addComponent(UITransform);
-        cardTransform.setContentSize(w, h);
+        card.addComponent(UITransform).setContentSize(w, h);
 
         const bgSprite = card.addComponent(Sprite);
         const tex = new Texture2D();
@@ -88,31 +105,43 @@ export class SkillUI extends Component {
         card.setPosition(pos);
 
         const nameNode = new Node('Name');
-        const nameTransform = nameNode.addComponent(UITransform);
-        nameTransform.setContentSize(300, 28);
+        nameNode.addComponent(UITransform).setContentSize(320, 28);
         const nameLabel = nameNode.addComponent(Label);
-        nameLabel.string = `${skill.name} [Lv.${skill.maxLevel}max]`;
+        const isMaxed = skill.currentLevel >= skill.maxLevel;
+        nameLabel.string = `${skill.name}  Lv.${skill.currentLevel}/${skill.maxLevel}`;
         nameLabel.fontSize = 20;
-        nameLabel.color = new Color(255, 220, 100, 255);
+        nameLabel.color = isMaxed ? new Color(150, 150, 150, 255) : new Color(255, 220, 100, 255);
         card.addChild(nameNode);
-        nameNode.setPosition(new Vec3(0, 15, 0));
+        nameNode.setPosition(new Vec3(0, 18, 0));
 
         const descNode = new Node('Desc');
-        const descTransform = descNode.addComponent(UITransform);
-        descTransform.setContentSize(300, 24);
+        descNode.addComponent(UITransform).setContentSize(320, 24);
         const descLabel = descNode.addComponent(Label);
         descLabel.string = skill.desc;
-        descLabel.fontSize = 16;
+        descLabel.fontSize = 15;
         descLabel.color = new Color(200, 200, 200, 255);
         card.addChild(descNode);
-        descNode.setPosition(new Vec3(0, -10, 0));
+        descNode.setPosition(new Vec3(0, -12, 0));
 
-        card.on(Node.EventType.TOUCH_END, () => {
+        card.on(Node.EventType.MOUSE_ENTER, () => {
+            if (bgSprite) bgSprite.color = CARD_HOVER;
+        });
+        card.on(Node.EventType.MOUSE_LEAVE, () => {
+            if (bgSprite) bgSprite.color = CARD_DEFAULT;
+        });
+        card.on(Node.EventType.TOUCH_START, () => {
+            if (bgSprite) bgSprite.color = CARD_PRESSED;
             if (this.onSkillSelected) {
                 this.onSkillSelected(skill.id);
             }
         });
+        card.on(Node.EventType.TOUCH_END, () => {
+            if (bgSprite) bgSprite.color = CARD_DEFAULT;
+        });
+        card.on(Node.EventType.TOUCH_CANCEL, () => {
+            if (bgSprite) bgSprite.color = CARD_DEFAULT;
+        });
 
-        return { bg: card, nameLabel, descLabel, skillId: skill.id };
+        return { bg: card, bgSprite, nameLabel, descLabel, skillId: skill.id, defaultColor: CARD_DEFAULT, hoverColor: CARD_HOVER };
     }
 }
